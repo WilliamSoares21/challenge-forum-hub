@@ -3,7 +3,6 @@ package br.forum.forum_hub.controller;
 import br.forum.forum_hub.domain.curso.CursoRepository;
 import br.forum.forum_hub.domain.topico.*;
 import br.forum.forum_hub.domain.usuario.Usuario;
-import br.forum.forum_hub.domain.usuario.UsuarioRepository;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
