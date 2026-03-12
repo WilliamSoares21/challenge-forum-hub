@@ -1,0 +1,61 @@
+name: CI – Validate & Test
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: ci_root_pass
+          MYSQL_DATABASE: forum_hub_ci
+          MYSQL_USER: forum_hub
+          MYSQL_PASSWORD: forum_hub_pass
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    env:
+      DB_FORUM_HUB_URL: jdbc:mysql://localhost:3306/forum_hub_ci
+      DB_FORUM_HUB_USER: forum_hub
+      DB_FORUM_HUB_PASSWORD: forum_hub_pass
+      # Segredo real configurado em Settings > Secrets and Variables > Actions
+      JWT_FORUM_HUB_SECRET: ${{ secrets.JWT_FORUM_HUB_SECRET }}
+
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Configurar JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
+      # Passo 1: aplica todas as migrations em um banco limpo.
+      # Captura erros de SQL, ordenação incorreta e conflitos de schema.
+      - name: Flyway – Migrate (banco limpo)
+        run: mvn flyway:migrate -B
+
+      # Passo 2: valida se os checksums dos arquivos locais batem com o que
+      # acabou de ser aplicado. Falha imediatamente se alguém editou um arquivo
+      # já comitado (exatamente o erro que aconteceu com V3).
+      - name: Flyway – Validate (checksums)
+        run: mvn flyway:validate -B
+
+      # Passo 3: sobe o contexto do Spring Boot (JPA, Security, etc.) e roda
+      # os testes. Falha se o contexto não inicializar ou qualquer teste quebrar.
+      - name: Maven – Test
+        run: mvn test -B
