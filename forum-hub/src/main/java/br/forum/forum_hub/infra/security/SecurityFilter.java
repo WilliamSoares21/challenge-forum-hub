@@ -27,19 +27,23 @@ public class SecurityFilter extends OncePerRequestFilter {
                                     FilterChain filterChain) throws ServletException, IOException {
         var tokenJWT = recuperarToken(request);
         if (tokenJWT != null) {
-            var subject = tokenService.getSubject(tokenJWT);
-            var usuario = usuarioRepository.findByEmail(subject);
-            var authentication = new UsernamePasswordAuthenticationToken(
-                    usuario, null, usuario.getAuthorities());
-            SecurityContextHolder.getContext().setAuthentication(authentication);
+            try {
+                var subject = tokenService.getSubject(tokenJWT);
+                var usuario = usuarioRepository.findByEmail(subject);
+                var authentication = new UsernamePasswordAuthenticationToken(
+                        usuario, null, usuario.getAuthorities());
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+            } catch (RuntimeException ignored) {
+                // Token inválido ou expirado: continua sem autenticar; Spring Security retornará 401
+            }
         }
         filterChain.doFilter(request, response);
     }
 
     private String recuperarToken(HttpServletRequest request) {
         var authorizationHeader = request.getHeader("Authorization");
-        if (authorizationHeader != null) {
-            return authorizationHeader.replace("Bearer ", "");
+        if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+            return authorizationHeader.substring(7);
         }
         return null;
     }
