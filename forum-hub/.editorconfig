@@ -1,0 +1,36 @@
+# EditorConfig – forum-hub
+# https://editorconfig.org
+
+root = true
+
+# ─── Padrão para todos os arquivos ────────────────────────────────────────────
+[*]
+charset = utf-8
+end_of_line = lf
+indent_style = space
+indent_size = 4
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+# ─── Java ─────────────────────────────────────────────────────────────────────
+[*.java]
+indent_size = 4
+
+# ─── XML / pom.xml ────────────────────────────────────────────────────────────
+[*.xml]
+indent_size = 4
+
+# ─── YAML (GitHub Actions, configs) ───────────────────────────────────────────
+[*.{yml,yaml}]
+indent_size = 2
+
+# ─── Properties ───────────────────────────────────────────────────────────────
+[*.properties]
+indent_size = 4
+
+# ─── Migrations SQL – IMUTÁVEIS após aplicadas ────────────────────────────────
+# trim_trailing_whitespace e insert_final_newline estão desativados para evitar
+# que o IDE ou formatador automático altere o conteúdo e quebre o checksum Flyway.
+[src/main/resources/db/migration/**.sql]
+trim_trailing_whitespace = false
+insert_final_newline = false
