@@ -1,11 +1,8 @@
 package br.forum.forum_hub.controller;
 
-import br.forum.forum_hub.domain.curso.CursoRepository;
 import br.forum.forum_hub.domain.topico.*;
 import br.forum.forum_hub.domain.usuario.Usuario;
-import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -19,65 +16,50 @@ import org.springframework.web.util.UriComponentsBuilder;
 @RequestMapping("/topicos")
 public class TopicoController {
 
-    @Autowired
-    private TopicoRepository topicoRepository;
+    private final TopicoService topicoService;
 
-    @Autowired
-    private CursoRepository cursoRepository;
+    public TopicoController(TopicoService topicoService) {
+        this.topicoService = topicoService;
+    }
 
     @PostMapping
-    @Transactional
     public ResponseEntity<DadosDetalheTopico> cadastrar(
             @RequestBody @Valid DadosCadastroTopico dados,
             @AuthenticationPrincipal Usuario usuarioLogado,
             UriComponentsBuilder uriBuilder) {
 
-        if (topicoRepository.existsByTituloAndMensagem(dados.titulo(), dados.mensagem())) {
+        var topicoCriado = topicoService.cadastrar(dados, usuarioLogado);
+        if (topicoCriado.isEmpty()) {
             return ResponseEntity.status(422).build();
         }
 
-        var curso = cursoRepository.findById(dados.idCurso())
-                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException("Curso não encontrado"));
-
-        var topico = new Topico(dados, usuarioLogado, curso);
-        topicoRepository.save(topico);
-
-        var uri = uriBuilder.path("/topicos/{id}").buildAndExpand(topico.getId()).toUri();
-        return ResponseEntity.created(uri).body(new DadosDetalheTopico(topico));
+        var detalhe = topicoCriado.get();
+        var uri = uriBuilder.path("/topicos/{id}").buildAndExpand(detalhe.id()).toUri();
+        return ResponseEntity.created(uri).body(detalhe);
     }
 
     @GetMapping
     public ResponseEntity<Page<DadosListagemTopico>> listar(
             @PageableDefault(size = 10, sort = "dataCriacao", direction = Sort.Direction.ASC) Pageable paginacao) {
-        var page = topicoRepository.findAll(paginacao).map(DadosListagemTopico::new);
+        var page = topicoService.listar(paginacao);
         return ResponseEntity.ok(page);
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<DadosDetalheTopico> detalhar(@PathVariable Long id) {
-        var topico = topicoRepository.findById(id)
-                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException("Tópico não encontrado"));
-        return ResponseEntity.ok(new DadosDetalheTopico(topico));
+        return ResponseEntity.ok(topicoService.detalhar(id));
     }
 
     @PutMapping("/{id}")
-    @Transactional
     public ResponseEntity<DadosDetalheTopico> atualizar(
             @PathVariable Long id,
             @RequestBody DadosAtualizacaoTopico dados) {
-        var topico = topicoRepository.findById(id)
-                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException("Tópico não encontrado"));
-        topico.atualizar(dados);
-        return ResponseEntity.ok(new DadosDetalheTopico(topico));
+        return ResponseEntity.ok(topicoService.atualizar(id, dados));
     }
 
     @DeleteMapping("/{id}")
-    @Transactional
     public ResponseEntity<Void> excluir(@PathVariable Long id) {
-        if (!topicoRepository.existsById(id)) {
-            throw new jakarta.persistence.EntityNotFoundException("Tópico não encontrado");
-        }
-        topicoRepository.deleteById(id);
+        topicoService.excluir(id);
         return ResponseEntity.noContent().build();
     }
 }
