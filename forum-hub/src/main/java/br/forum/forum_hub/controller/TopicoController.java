@@ -28,12 +28,7 @@ public class TopicoController {
             @AuthenticationPrincipal Usuario usuarioLogado,
             UriComponentsBuilder uriBuilder) {
 
-        var topicoCriado = topicoService.cadastrar(dados, usuarioLogado);
-        if (topicoCriado.isEmpty()) {
-            return ResponseEntity.status(422).build();
-        }
-
-        var detalhe = topicoCriado.get();
+        var detalhe = topicoService.cadastrar(dados, usuarioLogado);
         var uri = uriBuilder.path("/topicos/{id}").buildAndExpand(detalhe.id()).toUri();
         return ResponseEntity.created(uri).body(detalhe);
     }

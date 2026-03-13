@@ -1,14 +1,13 @@
 package br.forum.forum_hub.domain.topico;
 
 import br.forum.forum_hub.domain.curso.CursoRepository;
+import br.forum.forum_hub.domain.exception.RecursoNaoEncontradoException;
+import br.forum.forum_hub.domain.exception.RegraDeNegocioException;
 import br.forum.forum_hub.domain.usuario.Usuario;
-import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-
-import java.util.Optional;
 
 @Service
 public class TopicoService {
@@ -22,18 +21,18 @@ public class TopicoService {
     }
 
     @Transactional
-    public Optional<DadosDetalheTopico> cadastrar(DadosCadastroTopico dados, Usuario usuarioLogado) {
+    public DadosDetalheTopico cadastrar(DadosCadastroTopico dados, Usuario usuarioLogado) {
         if (topicoRepository.existsByTituloAndMensagem(dados.titulo(), dados.mensagem())) {
-            return Optional.empty();
+            throw new RegraDeNegocioException("Já existe um tópico com o mesmo título e mensagem");
         }
 
         var curso = cursoRepository.findById(dados.idCurso())
-                .orElseThrow(() -> new EntityNotFoundException("Curso não encontrado"));
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Curso não encontrado"));
 
         var topico = new Topico(dados, usuarioLogado, curso);
         topicoRepository.save(topico);
 
-        return Optional.of(new DadosDetalheTopico(topico));
+        return new DadosDetalheTopico(topico);
     }
 
     public Page<DadosListagemTopico> listar(Pageable paginacao) {
@@ -42,14 +41,14 @@ public class TopicoService {
 
     public DadosDetalheTopico detalhar(Long id) {
         var topico = topicoRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Tópico não encontrado"));
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Tópico não encontrado"));
         return new DadosDetalheTopico(topico);
     }
 
     @Transactional
     public DadosDetalheTopico atualizar(Long id, DadosAtualizacaoTopico dados) {
         var topico = topicoRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Tópico não encontrado"));
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Tópico não encontrado"));
         topico.atualizar(dados);
         return new DadosDetalheTopico(topico);
     }
@@ -57,7 +56,7 @@ public class TopicoService {
     @Transactional
     public void excluir(Long id) {
         if (!topicoRepository.existsById(id)) {
-            throw new EntityNotFoundException("Tópico não encontrado");
+            throw new RecursoNaoEncontradoException("Tópico não encontrado");
         }
         topicoRepository.deleteById(id);
     }

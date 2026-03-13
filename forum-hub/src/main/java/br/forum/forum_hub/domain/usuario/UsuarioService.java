@@ -1,5 +1,6 @@
 package br.forum.forum_hub.domain.usuario;
 
+import br.forum.forum_hub.domain.exception.RegraDeNegocioException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -16,7 +17,7 @@ public class UsuarioService {
 
     public Usuario cadastrar(DadosCadastroUsuario dados){
         if (usuarioRepository.verificarEmailExistente(dados.email()) == true) {
-            throw new RuntimeException ("Erro: Usuario com e-mail: " + dados.email() + " já existe");
+            throw new RegraDeNegocioException("Usuário com e-mail " + dados.email() + " já existe");
         }
         var senhaHash = passwordEncoder.encode(dados.senha());
         var novoUsuario = new Usuario(dados, senhaHash);

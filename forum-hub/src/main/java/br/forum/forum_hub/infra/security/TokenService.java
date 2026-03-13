@@ -1,5 +1,6 @@
 package br.forum.forum_hub.infra.security;
 
+import br.forum.forum_hub.domain.exception.RegraDeNegocioException;
 import br.forum.forum_hub.domain.usuario.Usuario;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
@@ -27,7 +28,7 @@ public class TokenService {
                     .withExpiresAt(dataExpiracao())
                     .sign(algorithm);
         } catch (JWTCreationException exception) {
-            throw new RuntimeException("Erro ao gerar token JWT", exception);
+            throw new RegraDeNegocioException("Erro ao gerar token JWT");
         }
     }
 
@@ -40,7 +41,7 @@ public class TokenService {
                     .verify(tokenJWT)
                     .getSubject();
         } catch (JWTVerificationException exception) {
-            throw new RuntimeException("Token JWT inválido ou expirado");
+            throw new RegraDeNegocioException("Token JWT inválido ou expirado");
         }
     }
 
